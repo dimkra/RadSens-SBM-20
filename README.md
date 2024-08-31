@@ -35,7 +35,7 @@ ESP32-C3 supermini
 <br>
 OLED дисплей 0,96" 128x64
 <br>
-<img src="https://github.com/user-attachments/assets/e3f0c5f6-6f3d-42f7-844d-ec651dce540a" width="500" >
+<img src="https://github.com/user-attachments/assets/e3f0c5f6-6f3d-42f7-844d-ec651dce540a" width="250" >
 <br>
 Модуль заряда аккумуляторов TP4056
 <br>
