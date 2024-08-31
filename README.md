@@ -31,6 +31,8 @@ radSens.getRadIntensyStatic(); //статическое значение мощ�
 <br>
 ESP32-C3 supermini 
 <br>
+<img src="[https://github.com/user-attachments/assets/6d28963c-b92d-44b3-90e4-519da4ca2fab" width="500" >
+<br>
 ![4915 750](https://github.com/user-attachments/assets/6d28963c-b92d-44b3-90e4-519da4ca2fab)
 <br>
 OLED дисплей 0,96" 128x64
