@@ -49,4 +49,6 @@ OLED дисплей 0,96" 128x64
 <br>
 Пищалка<br>
 <br>
+<br>
+Схема проекта:
 ![Схема типа Родник](https://github.com/user-attachments/assets/66348013-0c80-42ca-86b6-da3d2c07d48e)
