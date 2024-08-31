@@ -1,6 +1,7 @@
 # RadSens-SBM-20
 открытый проект радиометра на счетчике СБМ-20
-Радиометр RadSens 7.2 на базе платы RadSens от ClimateGuard
+<br>
+Радиометр на базе платы RadSens v.4 с пониженным энергопотреблением от ClimateGuard
 <br>
 https://climateguard.ru/radsens/
 <br>
@@ -28,5 +29,10 @@ radSens.getRadIntensyStatic(); //статическое значение мощ�
 <br>
 В проекте используется:<br>
 <br>
-
+ESP32-C3 supermini 
+<br>
+![4915 750](https://github.com/user-attachments/assets/6d28963c-b92d-44b3-90e4-519da4ca2fab)
+<br>
+OLED дисплей 0,96" 128x64
+<br>
 ![Схема типа Родник](https://github.com/user-attachments/assets/66348013-0c80-42ca-86b6-da3d2c07d48e)
