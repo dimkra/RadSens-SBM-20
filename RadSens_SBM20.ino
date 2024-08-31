@@ -1,5 +1,4 @@
 // RadSens СБМ-20
-
 /* 
 >---------------------------------ПЕРЕМЕННЫЕ Blynk--------------------------------------------
   Blynk.virtualWrite(V0, cps1s); 		                      //Blynk CPS 4значения по 250мс = 1сек
@@ -39,7 +38,8 @@ struct Data {
 Data mydata;
 FileData data(&LittleFS, "/data.dat", 'B', &mydata, sizeof(mydata));
 #define BLYNK_PRINT Serial
-#define BLYNK_AUTH_TOKEN "3vNS93lz8ycw0Gf3_seEYwqXpj2UgL6a"
+// вписать токен BLYNKa 
+#define BLYNK_AUTH_TOKEN ""  
 //#define OLED_SPI_SPEED 8000000ul
 #include <Wire.h>
 #include <CG_RadSens.h>
@@ -53,8 +53,8 @@ GyverOLED<SSD1306_128x64, OLED_BUFFER> oled;    // с буфером
 //GyverOLED<SSD1306_128x64, OLED_NO_BUFFER> oled; // без буфера
 //GyverOLED<SSH1106_128x64> oled;              // только программный буфер
 CG_RadSens radSens(RS_DEFAULT_I2C_ADDRESS);  // инициализируем RadSens
-char ssid[] = "Keenetic-3468";
-char pass[] = "Cwq4512%";
+char ssid[] = ""; //вписать SSID сети
+char pass[] = ""; //пароль сети
 char auth[] = BLYNK_AUTH_TOKEN;
 char buf1[50];
 char buf2[50];
@@ -62,7 +62,6 @@ char buf4[50];
 char buf3[50];
 char buf5[50];
 char buf6[50];
-//String tx;
 uint16_t ADC;         // переменная для значений АЦП
 uint32_t timer_cnt;   // таймер для измерений дозиметра
 uint32_t timer_cps;   // таймер для измерений импульсов за 1 сек. дозиметра
@@ -133,7 +132,6 @@ unsigned long last_press2 = 0;
 boolean press_flag3 = false;       //признак нажатия кнопки
 boolean long_press_flag3 = false;  //признак долгого нажатия кнопки
 unsigned long last_press3 = 0;
-
 
 // функция аудиоприветствия
 void hello() {
@@ -369,28 +367,16 @@ void rad_warning(uint8_t d) {
       oled.setScale(1);
       oled.setCursorXY(0, 3);
       oled.print("норально ");
-      //rad_sign(0, 0);
-      //rad_sign(16, 0);
-      //rad_sign(32, 0);
     } 
     if (d>30 && d <= 100) {
       oled.setScale(1);
       oled.setCursorXY(0, 3);
       oled.print("внимание ");
-      //rad_sign(0, 1);
-      //rad_sign(16, 0);
-      //rad_sign(32, 0);
     }
     if (d > 100) {
       oled.setScale(1);
       oled.setCursorXY(0, 3);
       oled.print("опасно   ");
-      //rad_sign(0, 1);
-      //rad_sign(16, 1);
-      //rad_sign(32, 0);
-      //rad_sign(0, 1);
-      //rad_sign(16, 1);
-      //rad_sign(32, 1);
     }
   }
 }
@@ -478,7 +464,6 @@ void setup() {
   oled.update();
   pinMode(ADC_pin, OUTPUT);                  // Инициализируем АЦП как получатель данных
   hello();                                   // Приветствуем пищанием
-
   pulsesPrev = radSens.getNumberOfPulses();  // Записываем значение для предотвращения серии тресков на старте
   prev_counter_cps = pulsesPrev;
   pinMode(buttonPin1, INPUT_PULLUP);  //Вход кнопки1
@@ -495,7 +480,6 @@ void setup() {
   //Blynk.config(auth, "blynk.tk", 8080);
   Wire.begin();
   oled.update();  // Обновляем экран
-  
   LittleFS.begin();
   FDstat_t stat = data.read();
   switch (stat) {
@@ -677,7 +661,6 @@ void loop() {
   } else {
     nWiFi(wifiOn);
   }
-
 
   // раз в 250 мс происходит опрос счётчика импульсов для создания тресков, если число импульсов за 250 мс превысит 5, раздастся предупреждение
   if (millis() - timer_imp > 250) {  //250
