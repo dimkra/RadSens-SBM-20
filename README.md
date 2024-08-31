@@ -51,7 +51,9 @@ OLED дисплей 0,96" 128x64
 <br>
 
 Схема проекта:
-![Схема типа Родник](https://github.com/user-attachments/assets/66348013-0c80-42ca-86b6-da3d2c07d48e)
+
+![Схема](https://github.com/user-attachments/assets/032ff4c3-46fd-400b-a261-69386662177b)
+
 <br><br>
 В проекте используются следующие библиотеки:<br>
 <br>
