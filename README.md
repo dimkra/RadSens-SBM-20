@@ -35,4 +35,18 @@ ESP32-C3 supermini
 <br>
 OLED дисплей 0,96" 128x64
 <br>
+![7067835996](https://github.com/user-attachments/assets/e3f0c5f6-6f3d-42f7-844d-ec651dce540a)
+<br>
+Модуль заряда аккумуляторов TP4056
+<br>
+Резисторы: 220кОм, 100кОм
+<br>
+Литьевый аккумулятор
+<br>
+Кнопка -3шт
+<br>
+Выключатель
+<br>
+Пищалка<br>
+<br>
 ![Схема типа Родник](https://github.com/user-attachments/assets/66348013-0c80-42ca-86b6-da3d2c07d48e)
