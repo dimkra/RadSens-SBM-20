@@ -1064,10 +1064,6 @@ void loop() {
       RuleDelta();
       int deltarX = 4+delta*80;
       if (deltarX>84) {deltarX=84;}
-      //oled.rect(4,59,deltarX,60,1);
-      //oled.rect(deltarX,59,84,60,0);
-      //if (delta*100<31) {drawDown(0); drawUp(0);}
-
       log_shkala((MDozi/3));
 
     }
@@ -1081,7 +1077,7 @@ void loop() {
     pP = pT;
     din = radSens.getRadIntensyDynamic();
 
-    rad_warning(MDozi);
+    rad_warning(MDozi/3);
 
     if (din < 1000) {
       sprintf(buf1, "%.1fмкР/ч ", din);  // Собираем строку с показаниями динамической интенсивности
