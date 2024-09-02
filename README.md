@@ -117,4 +117,6 @@ Blynk сервер - blynk.tk<br>
 <br>
 Пример: https://api.blynk.tk/{TOKEN}/update/V0?value=0
 <br>
+![2024-09-01 17-13-34](https://github.com/user-attachments/assets/77881c1f-b1bc-46e9-addf-e510f3448367)
+
 <br>
