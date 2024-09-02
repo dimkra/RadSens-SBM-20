@@ -1,4 +1,5 @@
 // RadSens СБМ-20
+
 /* 
 >---------------------------------ПЕРЕМЕННЫЕ Blynk--------------------------------------------
   Blynk.virtualWrite(V0, cps1s); 		                      //Blynk CPS 4значения по 250мс = 1сек
@@ -27,19 +28,27 @@
 #include <FileData.h>
 #include <LittleFS.h>
 #include <WiFi.h>
+
+float k_count = 40;   // коэффициент счетчика (для СБТ10-а 6,15)
+float s_f_c=0.1;     // собственный фон счетчика
+float m_v_c=0;        // мертвое время
+int okno=6;           // время окна
+int Cycl = 100;       //начальное значение циклов
+int tCylc=0;
+int priz20=0;
+
 struct Data {
   uint8_t wifi_e = 0;
   int sound_e = 0;
   int scr_e = 6;
-  float s_f_c_e=0.2;
-  float m_v_c_e=0.01;
-  float k_c_e=40;
+  float s_f_c_e=s_f_c;
+  float m_v_c_e=m_v_c;
+  float k_c_e=k_count;
 };
 Data mydata;
 FileData data(&LittleFS, "/data.dat", 'B', &mydata, sizeof(mydata));
 #define BLYNK_PRINT Serial
-// вписать токен BLYNKa 
-#define BLYNK_AUTH_TOKEN ""  
+#define BLYNK_AUTH_TOKEN ""
 //#define OLED_SPI_SPEED 8000000ul
 #include <Wire.h>
 #include <CG_RadSens.h>
@@ -53,8 +62,8 @@ GyverOLED<SSD1306_128x64, OLED_BUFFER> oled;    // с буфером
 //GyverOLED<SSD1306_128x64, OLED_NO_BUFFER> oled; // без буфера
 //GyverOLED<SSH1106_128x64> oled;              // только программный буфер
 CG_RadSens radSens(RS_DEFAULT_I2C_ADDRESS);  // инициализируем RadSens
-char ssid[] = ""; //вписать SSID сети
-char pass[] = ""; //пароль сети
+char ssid[] = "";
+char pass[] = "";
 char auth[] = BLYNK_AUTH_TOKEN;
 char buf1[50];
 char buf2[50];
@@ -62,6 +71,7 @@ char buf4[50];
 char buf3[50];
 char buf5[50];
 char buf6[50];
+//String tx;
 uint16_t ADC;         // переменная для значений АЦП
 uint32_t timer_cnt;   // таймер для измерений дозиметра
 uint32_t timer_cps;   // таймер для измерений импульсов за 1 сек. дозиметра
@@ -72,6 +82,7 @@ float са;
 int MDo=0;
 //------------------------------------------------>
 float Count = 0;    //счетчик импульсов
+float prev_Count = 0;
 float Counts[210];  //массив импульсов
 float CountsA[760];  //массив импульсов
 uint32_t Time = 0;  //счетчик массива счетчик времени в секундах
@@ -79,20 +90,20 @@ uint32_t TimeA = 0;  //счетчик всего времени в секунд�
 float SUMofCounts;
 float SUMofCountsA;  //усреднение за все время
 float MDozi;
+float prev_MDozi;
 float MDoziA;       //усреднение за все время  
 int priznC1 = 0;     //признак первого цикла окна
 int priznC1000 = 0;  //признак 1000 импульсов
-int Cycl = 200;      //начальное значение циклов
+
 float cpulses;
+
 
 //<------------------------------------------------
 
 int prev_counter_cps = 0;  // предыдущее значение счетчика импульсов
 int counter_cps = 0;       // счетчик импульсов
 int cps;                   // импульсов в сек
-float k_count = 40;      // коэффициент счетчика (для СБТ10-а 6,15)
-float s_f_c=0.2;
-float m_v_c=0.01;
+
 uint32_t ic = 1;
 float pP;
 float pT;
@@ -132,6 +143,7 @@ unsigned long last_press2 = 0;
 boolean press_flag3 = false;       //признак нажатия кнопки
 boolean long_press_flag3 = false;  //признак долгого нажатия кнопки
 unsigned long last_press3 = 0;
+
 
 // функция аудиоприветствия
 void hello() {
@@ -366,7 +378,7 @@ void rad_warning(uint8_t d) {
     if (d <= 30) {
       oled.setScale(1);
       oled.setCursorXY(0, 3);
-      oled.print("норально ");
+      oled.print("нормально ");
     } 
     if (d>30 && d <= 100) {
       oled.setScale(1);
@@ -457,13 +469,11 @@ void RuleDelta() {
 
 void setup() {
   Serial.begin(115200);
-  delay(1000);
   oled.init();  // Инициализируем OLED в коде
   Wire.setClock(800000L);
   oled.clear();
   oled.update();
   pinMode(ADC_pin, OUTPUT);                  // Инициализируем АЦП как получатель данных
-  hello();                                   // Приветствуем пищанием
   pulsesPrev = radSens.getNumberOfPulses();  // Записываем значение для предотвращения серии тресков на старте
   prev_counter_cps = pulsesPrev;
   pinMode(buttonPin1, INPUT_PULLUP);  //Вход кнопки1
@@ -471,13 +481,12 @@ void setup() {
   pinMode(buttonPin3, INPUT_PULLUP);  //Вход кнопки3
   oled.setContrast(254);        //Яркость дисплея
   oled.invertDisplay(0);
-   oled.flipV(1);         // Я перевернул экран для удобства
+  oled.flipV(1);         // Я перевернул экран для удобства
   oled.flipH(1);
-  oled.textMode(BUF_REPLACE );
+  oled.textMode(BUF_REPLACE);
+  delay(1000);
+  hello();  
   light = radSens.getLedState();
-  drawlight(light);
-  //WiFi.begin(ssid, pass);
-  //Blynk.config(auth, "blynk.tk", 8080);
   Wire.begin();
   oled.update();  // Обновляем экран
   LittleFS.begin();
@@ -662,31 +671,35 @@ void loop() {
     nWiFi(wifiOn);
   }
 
+
   // раз в 250 мс происходит опрос счётчика импульсов для создания тресков, если число импульсов за 250 мс превысит 5, раздастся предупреждение
-  if (millis() - timer_imp > 250) {  //250
+  if (millis() - timer_imp > 750) {  //250
     timer_imp = millis();
     int pulses = radSens.getNumberOfPulses();
     puls = pulses - pulsesPrev;
+    tCylc++;
+    Blynk.virtualWrite(V22, pulses);
+    Blynk.virtualWrite(V23, tCylc);
     //звук.сигнал. предупреждение
     if (pulses - pulsesPrev > 5) {
       if (sound == 1) { warning(); }
       rad_sign(0, 1);  //рисует знак радиации
     } else {rad_sign(0, 0);}
 
-    if (puls < 3) {
+    if (puls < 1) {
       warn--;
       if (warn == -1) { warn = 0; }
     }
-    if (puls > 3) { warn = 1; }
-    if (puls > 4) { warn = 2; }
-    if (puls > 5) { warn = 3; }
-    if (puls > 6) { warn = 4; }
-    if (puls > 7) { warn = 5; }
-    if (puls > 8) { warn = 6; }
-    if (puls > 9) { warn = 7; }
-    if (puls > 10) { warn = 8; }
-    if (puls > 11) { warn = 9; }
-    if (puls > 12) { warn = 10; }
+    if (puls > 1) { warn = 1; }
+    if (puls > 2) { warn = 2; }
+    if (puls > 3) { warn = 3; }
+    if (puls > 4) { warn = 4; }
+    if (puls > 5) { warn = 5; }
+    if (puls > 6) { warn = 6; }
+    if (puls > 7) { warn = 7; }
+    if (puls > 8) { warn = 8; }
+    if (puls > 9) { warn = 9; }
+    if (puls > 10) { warn = 10; }
     maswarn[i] = warn;
     cps250[i] = puls;
     i++;
@@ -853,22 +866,31 @@ void loop() {
 
 
 
-  //Считаем импульсы за 1 сек
-  if (millis() - timer_cps > 3000) {  //1000
+  //Считаем импульсы за окно 
+  if (millis() - timer_cps > (okno*1000)) {  //1000
     timer_cps = millis();
+    
+    //>------------- окно --------------------
+    //получение импульсов за окно
     counter_cps = radSens.getNumberOfPulses();
-    Count = (counter_cps - prev_counter_cps);  //получение импульсов за 1сек.
+    prev_Count = Count;
+    Count = (counter_cps - prev_counter_cps);
     prev_counter_cps = counter_cps;
+    //<---------------------------------------------
+
+    //>---------основной цикл------------------------
     Time=Time+1;
     TimeA=TimeA+1;
     if (Time > Cycl) { Time = Cycl; }
     if (TimeA > 750) { TimeA = 750; }
-    SUMofCounts = 0;
+    SUMofCounts = 0; 
     SUMofCountsA = 0;
+
     //наполение массива
-    if (priznC1000 == 1) {
+    if (priznC1000 == 1) { //признак достаточного набора
       for (int i1 = Cycl; i1 > Time; i1--) { Counts[i1] = 0; }
     }
+
     for (int i1 = 1; i1 < Time + 1; i1++) {
       if (i1 < Time) {
         Counts[Time + 1 - i1] = Counts[Time + 1 - i1 - 1];
@@ -885,31 +907,37 @@ void loop() {
       }
     }
 
+    //>---Сумма импульсов за основной цикл 10,5мин
     priznC1000 = 0;
-    //Сумма импульсов за цикл окна
     for (int i1 = 1; i1 < Time + 1; i1++) {
       SUMofCounts = SUMofCounts + Counts[i1];
-      if (SUMofCounts > 1000) {
+      //>---Уменьшение основного цикла при наборе достаточного кол. импульсов за цикл
+      if (SUMofCounts > 500) {
         priznC1000 = 1;
         Time = i1;
         break;
       }
+      //<---
     }
-    
+    //<------------------------------------------------
 
+    //>---Сумма импульсов в цикле 37,5мин.
     for (int i1 = 1; i1 < TimeA + 1; i1++) {
       SUMofCountsA = SUMofCountsA + CountsA[i1];
     }
+    //<-----------------------------------------
 
-    SUMofCounts=SUMofCounts-s_f_c*Time;
-    SUMofCountsA=SUMofCountsA-s_f_c*TimeA;
+    float allSUMofCounts=SUMofCounts;
+    SUMofCounts=SUMofCounts-s_f_c*Time*okno ;
+    SUMofCountsA=SUMofCountsA-s_f_c*TimeA*okno;
     if (SUMofCounts<0) {SUMofCounts=0;}
     if (SUMofCountsA<0) {SUMofCountsA=0;}
+    prev_MDozi=MDozi;
     MDozi = (k_count / Time) * SUMofCounts;
     MDoziA = (k_count / TimeA) * SUMofCountsA;
      
-    if ((MDozi*1.2)<MDoziA) {Serial.println("меньше среднего");}
-    if (MDozi>(MDoziA*1.2)) {Serial.println("больше среднего");}
+    //if ((MDozi*1.2)<MDoziA) {Serial.println("меньше среднего");}
+    //if (MDozi>(MDoziA*1.2)) {Serial.println("больше среднего");}
     //-----> сумма квадратов
     float sr_a = SUMofCounts / Time;
     float sum_kv = 0;
@@ -919,51 +947,61 @@ void loop() {
     //<----- сумма квадратов
     float st_otkl = sqrt(sum_kv / (Time - 1));            //стандартное отклонение
     float delta = ((2 * st_otkl / (sqrt(Time))) / sr_a);  //относительное отклонение
-    if (sr_a * 10 < Count) {
-      //Serial.println("Скачек вверх");
-      ResetDoze();
-      if (Scr == 6) {
-        //drawDown(0);
-        //drawUp(1);
-      }
 
-    }
-    if ((Count + 1) * 10 < sr_a) {
-      //Serial.println("Скачек вниз");
+    if (sr_a * 7 < Count) {
+      Serial.println("Скачек вверх");
       ResetDoze();
-      if (Scr == 6) {
-        //drawUp(0);
-        //drawDown(1);
+      if (Scr == 6) { //drawDown(0*); //drawUp(1);
       }
     }
+    if ((Count + 1) * 6 < sr_a) {
+      Serial.println("Скачек вниз");
+      ResetDoze();
+      if (Scr == 6) { //drawUp(0); //drawDown(1);
+      }
+    }
+
     if (net) {
       Blynk.virtualWrite(V8, delta*100); //Blynk отклонение отностит в %
       Blynk.virtualWrite(V9, sr_a); //Blynk среднее арифм CPS за окно
-      Blynk.virtualWrite(V10, Count); //Blynk  CPS за 1сек;
-      Blynk.virtualWrite(V11, MDozi); //Blynk мощность дозы
-      Blynk.virtualWrite(V12, MDoziA); //Blynk мощность дозы усреднение 750сек
+      Blynk.virtualWrite(V10, Count/okno); //Blynk  CPS за 1сек;
+      Blynk.virtualWrite(V11, MDozi/okno); //Blynk мощность дозы
+      Blynk.virtualWrite(V12, MDoziA/okno); //Blynk мощность дозы усреднение 750сек
+      Blynk.virtualWrite(V20, Time*okno); 
+      Blynk.virtualWrite(V21, allSUMofCounts); 
     }
     
-    Serial.print(Time*3);
+    Serial.print(Time*okno);
     Serial.println(" секундный цикл  ");
-    Serial.print(sr_a/3);
+    Serial.print(sr_a/okno);
     Serial.println(" сред.арифм.CPS");
-    Serial.print(Count/3);
-    Serial.println(" CPS текущий");
+    Serial.print(Count);
+    Serial.println(" CPS за окно");
     Serial.print("сумма CPS за цикл ");
-    Serial.println(SUMofCounts);
+    Serial.println(allSUMofCounts);
     Serial.print("собств. фон за цикл ");
-    Serial.println(s_f_c*Time);
-    Serial.print("мощность дозы ");
-    Serial.print(MDozi/3);
+    Serial.println(s_f_c*Time*okno);
+    Serial.print("           мощность дозы -");
+    Serial.print(MDozi/okno);
+    Serial.println("мкР/ч");
+    Serial.print("предыдущая мощность дозы -");
+    Serial.print(prev_MDozi/okno);
+    Serial.println("мкР/ч");
+    Serial.print("мощность дозы стат 37,5мин ");
+    Serial.print(MDoziA/okno);
     Serial.println("мкР/ч");
     Serial.print("дельта ");
     Serial.print(delta * 100);
     Serial.println("% ");
     Serial.print(buf1);
     Serial.println(" мкР/ч динам. radsens");
+    Serial.print("поиск - ");
+    Serial.println(puls);
+    if ((delta*100)<21 || priz20==0) {
+      Serial.println(Time*okno);
+      priz20=1;
+    }
     Serial.println("____________________");
-    
 
     // экран №5 Obsidin
     if (Scr == 5) {
@@ -1027,20 +1065,20 @@ void loop() {
       if (delta*100>99) {delta=0.99;}
       sprintf(Delta_txt, "%.0f", delta * 100);
       strcat(Delta_txt, "%  ");
-      if ((MDozi/3) < 100) {
-        sprintf(MDozi_txt, "%.2f  ", (MDozi/3));
+      if ((MDozi/okno) < 100) {
+        sprintf(MDozi_txt, "%.2f  ", (MDozi/okno));
         
       }
       else {
-        if ((MDozi/3) < 1000) {
-          sprintf(MDozi_txt, "%.1f  ", (MDozi/3));
+        if ((MDozi/okno) < 1000) {
+          sprintf(MDozi_txt, "%.1f  ", (MDozi/okno));
           
         } else {
           sprintf(MDozi_txt, "%.2f  ", MDozi / 3000);
         }
       }
-      if ((MDozi/3) < 10) {
-        sprintf(MDozi_txt, "%.2f  ", (MDozi/3));
+      if ((MDozi/okno) < 10) {
+        sprintf(MDozi_txt, "%.2f  ", (MDozi/okno));
         oled.setCursorXY(19, 26);
       } else { oled.setCursorXY(19, 26); }
       
@@ -1051,7 +1089,7 @@ void loop() {
       oled.print(Delta_txt);
       oled.setCursorXY(51, 48);
       oled.setScale(1);
-      if (((MDozi/3) < 1000)) {oled.print("мкР/ч ");} else {oled.print("мР/ч  ");}
+      if (((MDozi/okno) < 1000)) {oled.print("мкР/ч ");} else {oled.print("мР/ч  ");}
       //знак +-
       oled.line(6,50,10,50,1);
       oled.line(6,54,10,54,1);
@@ -1060,12 +1098,10 @@ void loop() {
 
       drawRule6();
       oled.rect(111,12,127,63,0);
-      
       RuleDelta();
       int deltarX = 4+delta*80;
       if (deltarX>84) {deltarX=84;}
-      log_shkala((MDozi/3));
-
+      log_shkala((MDozi/okno));
     }
   }
 
@@ -1077,7 +1113,7 @@ void loop() {
     pP = pT;
     din = radSens.getRadIntensyDynamic();
 
-    rad_warning(MDozi/3);
+    rad_warning(MDozi/okno);
 
     if (din < 1000) {
       sprintf(buf1, "%.1fмкР/ч ", din);  // Собираем строку с показаниями динамической интенсивности
